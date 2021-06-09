@@ -1,0 +1,61 @@
+:PROPERTIES:
+:header-args:  :comments both :tangle build.sh :shebang "#!/bin/bash"
+:END:
+
+
+
+This repo extracts some components from the NVIDIA CUDA toolkit to make them
+searchable in Sourcegraph.
+
+* Prelude
+
+
+#+begin_src shell
+set -eux
+#+end_src
+
+* Make build dir
+
+#+begin_src shell
+set -eux
+
+BUILD_DIR=$(realpath .)/build
+OUTPUT_DIR=$(realpath .)/output
+mkdir -p $BUILD_DIR
+mkdir -p $OUTPUT_DIR
+
+echo $BUILD_DIR
+echo $OUTPUT_DIR
+#+end_src
+
+
+* Download and extract deb
+
+Choose the right deb here
+
+https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&Distribution=Ubuntu&target_version=20.04&target_type=deb_local
+
+#+begin_src shell
+cd $BUILD_DIR
+
+DOWNLOAD_URL='https://developer.download.nvidia.com/compute/cuda/11.3.1/local_installers/cuda-repo-ubuntu2004-11-3-local_11.3.1-465.19.01-1_amd64.deb'
+curl -O -C - $DOWNLOAD_URL
+
+DEB_NAME=$(fd '.deb' -x echo \{/\} | head -n1)
+echo $DEB_NAME
+
+EXTRACT_DIR=extracted/$DEB_NAME
+mkdir -p $EXTRACT_DIR
+
+dpkg-deb -x $DEB_NAME $EXTRACT_DIR
+#+end_src
+
+* Find components we want and extract them to output_dir
+
+#+begin_src shell
+mkdir -p $OUTPUT_DIR/$DEB_NAME
+
+fd 'cuda-cudart-dev.*\.deb' extracted/$DEB_NAME -x dpkg-deb -x {} $OUTPUT_DIR/$DEB_NAME/{/}
+
+echo "You can delete $BUILD_DIR"
+#+end_src
